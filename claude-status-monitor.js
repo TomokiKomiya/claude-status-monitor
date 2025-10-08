@@ -26,21 +26,16 @@ function sendSlackNotification(message, isError = false) {
     }
   };
 
-  console.log('Sending to:', url.hostname + url.pathname);
-  console.log('Data:', data);
-
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
       let body = '';
       res.on('data', (chunk) => body += chunk);
       res.on('end', () => {
-        console.log('Response status:', res.statusCode);
-        console.log('Response body:', body);
         if (res.statusCode === 200) {
           console.log('Slack通知送信成功');
           resolve(body);
         } else {
-          reject(new Error(`Slack通知失敗: ${res.statusCode} - ${body}`));
+          reject(new Error(`Slack通知失敗: ${res.statusCode}`));
         }
       });
     });
@@ -96,7 +91,7 @@ async function main() {
     
     const currentStatus = await checkStatus();
     const previousStatus = loadPreviousStatus();
-    
+
     const indicator = currentStatus.status.indicator;
     const description = currentStatus.status.description;
     

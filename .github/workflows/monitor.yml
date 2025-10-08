@@ -1,0 +1,41 @@
+name: Claude Code Status Monitor
+
+on:
+  schedule:
+    # 5分ごとに実行 (GitHub Actionsの最小間隔)
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Download previous status cache
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: status-cache
+          path: .
+      
+      - name: Run status check
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: node claude-status-monitor.js
+      
+      - name: Upload status cache
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: status-cache
+          path: status_cache.json
+          retention-days: 1
+          overwrite: true

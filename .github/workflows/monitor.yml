@@ -18,24 +18,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
-      - name: Download previous status cache
-        uses: actions/download-artifact@v4
-        continue-on-error: true
+
+      - name: Restore status cache
+        uses: actions/cache/restore@v4
         with:
-          name: status-cache
-          path: .
-      
+          path: status_cache.json
+          key: claude-status-cache
+
       - name: Run status check
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: node claude-status-monitor.js
-      
-      - name: Upload status cache
-        uses: actions/upload-artifact@v4
+
+      - name: Save status cache
+        uses: actions/cache/save@v4
         if: always()
         with:
-          name: status-cache
           path: status_cache.json
-          retention-days: 1
-          overwrite: true
+          key: claude-status-cache

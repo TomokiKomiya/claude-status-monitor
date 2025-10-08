@@ -2,7 +2,8 @@ const https = require('https');
 
 // 環境変数から取得
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-const STATUS_API_URL = 'https://status.anthropic.com/api/v2/status.json';
+
+const STATUS_API_URL = 'https://status.claude.com/api/v2/status.json';
 
 // GitHub Actionsのアーティファクト用ディレクトリ
 const fs = require('fs');
@@ -10,40 +11,36 @@ const STATUS_FILE = './status_cache.json';
 
 function sendSlackNotification(message, isError = false) {
   const data = JSON.stringify({
-    text: message,
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: message
-        }
-      }
-    ]
+    text: message
   });
 
   const url = new URL(SLACK_WEBHOOK_URL);
   const options = {
     hostname: url.hostname,
     port: 443,
-    path: url.pathname,
+    path: url.pathname + url.search,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Content-Length': data.length
+      'Content-Length': Buffer.byteLength(data)
     }
   };
+
+  console.log('Sending to:', url.hostname + url.pathname);
+  console.log('Data:', data);
 
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
       let body = '';
       res.on('data', (chunk) => body += chunk);
       res.on('end', () => {
+        console.log('Response status:', res.statusCode);
+        console.log('Response body:', body);
         if (res.statusCode === 200) {
           console.log('Slack通知送信成功');
           resolve(body);
         } else {
-          reject(new Error(`Slack通知失敗: ${res.statusCode}`));
+          reject(new Error(`Slack通知失敗: ${res.statusCode} - ${body}`));
         }
       });
     });
@@ -128,7 +125,7 @@ async function main() {
         message = `ℹ️ *Claude Codeステータス更新*\n${description}`;
       }
       
-      message += `\n\n<https://status.anthropic.com/|詳細を確認>`;
+      message += `\n\n<https://status.claude.com/|詳細を確認>`;
       
       await sendSlackNotification(message, isError);
       console.log('通知送信完了');
